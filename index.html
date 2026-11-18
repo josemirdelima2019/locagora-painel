@@ -142,7 +142,9 @@ const MODS = [
    {key:"patio", t:"Motos no pátio de disponíveis", date:"entrada", note:"0 km = menos de 10 km. A faixa e o valor de retirada são calculados pelo KM.",
     campos:[U("placa","Placa",{req:1}), S("modelo","Modelo",MODELOS), T("cor","Cor"), N("km","KM"), T("franq","Franqueado",{list:"franq"}), D("entrada","Entrada no pátio")],
     comp:[["Faixa",r=>faixa(r.km).f],["Retirada",r=>faixa(r.km).p],["Plano",r=>faixa(r.km).plano]],
-    filt:[["Faixa",r=>faixa(r.km).f]]}]},
+    filt:[["Faixa",r=>faixa(r.km).f]]},
+   {key:"vist", t:"Vistorias", date:"data", nobadge:1, note:"Entradas, saídas, locações, distratos e manutenções vistoriadas.",
+    campos:[D("data","Data",{req:1}), T("hora","Hora"), U("placa","Placa",{req:1}), S("tipo","Tipo",["Locação","Distrato","Entrada","Saída","Manutenção (Entrada)","Manutenção (Saída)","Veículo Reserva"]), S("status","Status",["Pendente","Aprovada"]), T("locadora","Locadora / franqueado",{list:"franq"}), T("locatario","Locatário")]}]},
  {id:"ficha", nome:"FICHA DA MOTO", ic:"📋", secs:[
    {key:"consulta", t:"Consulta por placa", custom:1},
    {key:"motos", t:"Cadastro de motos",
@@ -175,8 +177,8 @@ const MODS = [
    {key:"g_franq", t:"Franqueados na esteira", note:"Loca 10 e Vai de Moto: não disponíveis para locação.",
     campos:[T("nome","Franqueado",{req:1,list:"franq"}), S("disp","Disponível p/ locação",["Sim","Não"]), T("planos","Planos aceitos"), T("sos","SOS / seguro"), A("obs","Observações",{hide:1})]},
    {key:"g_loc", t:"Locações realizadas", date:"data",
-    campos:[D("data","Data",{req:1}), T("consultor","Consultor"), T("cliente","Cliente"), U("placa","Placa"), T("franq","Franqueado",{list:"franq"}), S("modelo","Modelo",MODELOS), S("tipo","Tipo",["0 km","Seminova"]), S("plano","Plano",["Fidelidade","Anual"]), M("caucao","Caução (entrada)")],
-    sum:"caucao"},
+    campos:[D("data","Início",{req:1}), T("consultor","Consultor"), T("cliente","Cliente"), U("placa","Placa"), T("franq","Franqueado",{list:"franq"}), S("modelo","Modelo",MODELOS), S("tipo","Tipo",["0 km","Seminova"]), S("plano","Plano",["Fidelidade","Anual"]), S("status","Situação",["Ativa","Encerrada"]), D("fim","Fim do contrato",{}), M("sem","Semanal"), M("caucao","Caução (entrada)"), S("origem","Origem do lead",["Instagram","Espontâneo","Indicação","Google","App","Não informado"])],
+    sum:"caucao", nobadge:1},
    {key:"g_fin", t:"Entradas financeiras", date:"data",
     campos:[D("data","Data",{req:1}), T("desc","Descrição",{req:1}), S("tipo","Tipo",["Caução","Semanal","Outro"]), M("valor","Valor"), U("placa","Placa")],
     sum:"valor"}]},
@@ -211,7 +213,7 @@ const fdate = s => s ? s.split("-").reverse().join("/") : "";
 const $ = s => document.querySelector(s);
 function toast(m){ const t=$("#toast"); t.textContent=m; t.classList.add("on"); setTimeout(()=>t.classList.remove("on"),2200) }
 const findSec = k => { for(const m of MODS) for(const s of (m.secs||[])) if(s.key===k) return s; };
-const OKV=["APROVADO","Aprovado","Aprovada","Concluída","Resolvido","Aceita","Recebido","Realizada","Paga","Comprado","Sim"];
+const OKV=["Ativa","APROVADO","Aprovado","Aprovada","Concluída","Resolvido","Aceita","Recebido","Realizada","Paga","Comprado","Sim"];
 const BADV=["REPROVADO","Reprovado","Recusada","Recusado","Faltou","Não","Urgente"];
 const chip = v => !v ? "" : `<span class="chip ${OKV.includes(v)?"ok":BADV.includes(v)?"bad":""}">${esc(v)}</span>`;
 
@@ -229,7 +231,7 @@ window.addEventListener("hashchange", route);
 // ---------- Navegação ----------
 function badge(mod){
   if(mod.id==="painel") return "";
-  const open = (mod.secs||[]).reduce((a,s)=>a+rows(s.key).filter(r=>r.status && !OKV.concat(BADV).includes(r.status)).length,0);
+  const open = (mod.secs||[]).filter(s=>!s.nobadge).reduce((a,s)=>a+rows(s.key).filter(r=>r.status && !OKV.concat(BADV).includes(r.status)).length,0);
   return open ? `<span class="cnt">${open}</span>` : "";
 }
 function drawNav(){
@@ -256,6 +258,8 @@ function drawHome(){
    <div class="grid">
     ${kpi(pat.length,"Motos no pátio",`${z} com 0 km`,"patio")}
     ${kpi(locM,"Locações no mês",`Caução: ${brl(cau)}`,"gestao/g_loc")}
+    ${kpi(rows("g_loc").filter(r=>r.status==="Ativa").length,"Contratos ativos","","gestao/g_loc")}
+    ${kpi(rows("vist").filter(r=>r.status==="Pendente").length,"Vistorias pendentes","","patio/vist")}
     ${kpi(leadsHoje.length,"Leads agendados hoje",`${leadsPend} em aberto no total`,"leads")}
     ${kpi(aprov,"Aprovações pendentes","Fila do LOC CS","cs/cs_aprov")}
     ${kpi(man,"Manutenções abertas",`${pecas} peça(s) para repor`,"mecanica")}
@@ -276,7 +280,7 @@ function sectionView(){
   const mod = MODS.find(m=>m.id===cur.m), sec = mod.secs.find(s=>s.key===cur.s);
   if(sec.custom) return fichaView(mod,sec);
   const all = rows(sec.key);
-  const sels =sec.campos.filter(c=>c.t==="sel").slice(0,3).map(c=>[c.l,c.k,c.opts]);
+  const sels = sec.campos.filter(c=>c.t==="sel").slice(0,5).map(c=>[c.l,c.k,[...new Set(c.opts.concat(all.map(r=>r[c.k]).filter(Boolean)))]]);
   const filt = (sec.filt||[]);
   const list = all.filter(r=>{
     if(cur.q){ const hay = sec.campos.map(c=>r[c.k]).join(" ").toLowerCase(); if(!hay.includes(cur.q.toLowerCase())) return false }
@@ -291,7 +295,8 @@ function sectionView(){
   (sec.comp||[]).forEach(([l])=>cols.push({h:l}));
 
   const head = cols.map(c=>`<th class="${c.c?"c":""}">${esc(c.h)}</th>`).join("")+"<th></th>";
-  const body = list.map(r=>{
+  const LIM = 500, shown = list.slice(0,LIM);
+  const body = shown.map(r=>{
     const tds = [];
     sec.campos.forEach(c=>{
       if(c.hide) return;
@@ -320,7 +325,7 @@ function sectionView(){
    <div class="bar">
      <input id="q" placeholder="Buscar…" value="${esc(cur.q)}">
      ${selUI}${dates}
-     <span class="sum">${list.length} registro(s)${sum}</span>
+     <span class="sum">${list.length.toLocaleString("pt-BR")} registro(s)${list.length>LIM?` (mostrando os ${LIM} mais recentes; use os filtros)`:""}${sum}</span>
      <span class="sp"></span>
      <button class="btn l s" id="bCsv">Exportar CSV</button>
      <button class="btn g" id="bNew">+ Novo</button>
@@ -342,8 +347,9 @@ const COOP = "COOPERLOC · 0800 000 1372", SOMOSMAIS = "SOMOS MAIS · 0800 943 0
 function sosFor(f){
   const n=(f||"").toUpperCase().trim(); if(!n) return [];
   const g=rows("g_franq").find(x=>(x.nome||"").toUpperCase()===n); if(g&&g.sos) return [g.sos];
-  if(["MLS","LOCSIMPLES"].includes(n)) return [COOP,SOMOSMAIS];
-  return SOMOS.includes(n) ? [SOMOSMAIS] : [COOP];
+  const tk=n.split(/[^A-Z0-9']+/), has=k=>k.includes(" ")?n.includes(k):tk.includes(k);
+  if(["MLS","LOCSIMPLES"].some(has)) return [COOP,SOMOSMAIS];
+  return SOMOS.some(has) ? [SOMOSMAIS] : [COOP];
 }
 function motoData(p){
   const o={placa:p,src:[]};
@@ -369,7 +375,8 @@ function renderFicha(){
   const man=by("manut").sort((a,b)=>String(b.entrada||"").localeCompare(String(a.entrada||"")));
   const loc=by("g_loc").sort((a,b)=>String(b.data||"").localeCompare(String(a.data||"")));
   const req=by("l_req").sort((a,b)=>String(b.data||"").localeCompare(String(a.data||"")));
-  if(!m.src.length && !man.length && !loc.length && !req.length){
+  const vis=by("vist").sort((a,b)=>(b.data+(b.hora||"")).localeCompare(a.data+(a.hora||"")));
+  if(!m.src.length && !man.length && !loc.length && !req.length && !vis.length){
     el.innerHTML=`<div class="empty">Placa <b>${esc(p)}</b> não encontrada. Cadastre a moto na aba “Cadastro de motos”.</div>`; return }
   const chips=[]; if(m.situacao) chips.push(chip(m.situacao));
   if(m.src.includes("patio")) chips.push(`<span class="chip z">No pátio de disponíveis</span>`);
@@ -385,6 +392,7 @@ function renderFicha(){
     <div class="sos"><span class="sum">SOS / SEGURO</span><br>${sos.length?sos.map(s=>`<b>${esc(s)}</b>`).join("<br>"):`<span class="sum">Informe o franqueado para ver o SOS.</span>`}${["MLS","LOCSIMPLES"].includes((m.franq||"").toUpperCase())?`<br><span class="sum">Franqueado consta nas duas seguradoras; confirme qual vale para esta placa.</span>`:""}</div></div>
    <div class="card"><h3>Manutenções (${man.length})</h3>${tbl(["Entrada","Serviço","Status","Mecânico","Custo"],man.map(r=>`<tr><td>${fdate(r.entrada)}</td><td>${esc(r.serv)}</td><td>${chip(r.status)}</td><td>${esc(r.mec)}</td><td>${r.custo!==""&&r.custo!==undefined?brl(r.custo):""}</td></tr>`))}</div>
    <div class="card"><h3>Locações (${loc.length})</h3>${tbl(["Data","Cliente","Consultor","Plano","Caução"],loc.map(r=>`<tr><td>${fdate(r.data)}</td><td>${esc(r.cliente)}</td><td>${esc(r.consultor)}</td><td>${esc(r.plano)}</td><td>${r.caucao!==""&&r.caucao!==undefined?brl(r.caucao):""}</td></tr>`))}</div>
+   <div class="card"><h3>Vistorias (${vis.length}${vis.length>12?" · últimas 12":""})</h3>${tbl(["Data","Tipo","Status","Locatário"],vis.slice(0,12).map(r=>`<tr><td>${fdate(r.data)} ${esc(r.hora||"")}</td><td>${esc(r.tipo)}</td><td>${chip(r.status)}</td><td>${esc(r.locatario)}</td></tr>`))}</div>
    <div class="card"><h3>Requisições ao franqueado (${req.length})</h3>${tbl(["Data","Peças","Valor","Status"],req.map(r=>`<tr><td>${fdate(r.data)}</td><td>${esc(r.pecas)}</td><td>${r.valor!==""&&r.valor!==undefined?brl(r.valor):""}</td><td>${chip(r.status)}</td></tr>`))}</div>`;
 }
 
@@ -397,7 +405,7 @@ function openForm(secKey, id){
   const inp = c => {
     const v = r[c.k] ?? def[c.k] ?? "";
     const n = `name="${c.k}"`;
-    if(c.t==="sel"||c.t==="st") return `<select ${n}><option value=""></option>${c.opts.map(o=>`<option ${v===o?"selected":""}>${esc(o)}</option>`).join("")}</select>`;
+    if(c.t==="sel"||c.t==="st") return `<select ${n}><option value=""></option>${(v&&!c.opts.includes(v)?c.opts.concat(v):c.opts).map(o=>`<option ${v===o?"selected":""}>${esc(o)}</option>`).join("")}</select>`;
     if(c.t==="area") return `<textarea ${n}>${esc(v)}</textarea>`;
     if(c.t==="num") return `<input ${n} type="number" step="any" value="${esc(v)}">`;
     if(c.t==="money") return `<input ${n} type="number" step="0.01" value="${esc(v)}">`;
