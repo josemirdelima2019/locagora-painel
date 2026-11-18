@@ -76,6 +76,20 @@ dialog::backdrop{background:#0b103099}
 .list{display:grid;gap:6px}
 .list div{display:flex;justify-content:space-between;gap:10px;padding:8px 10px;background:#f6f7fd;border-radius:8px}
 .sum{color:var(--mut);font-weight:600}
+.fh{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap}
+.fh .pl{font-size:30px;font-weight:800;letter-spacing:2px}
+.kv{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:8px 16px;margin-top:8px}
+.kv div span{display:block;font-size:11px;font-weight:700;color:var(--mut);text-transform:uppercase;letter-spacing:.4px}
+.kv div b{font-size:15px}
+.sos{background:#fff7e0;border:1px solid #f0d58a;border-radius:10px;padding:10px 12px;margin-top:10px}
+.sos b{font-size:16px}
+@media print{
+  html,body{height:auto;overflow:visible;background:#fff}
+  .app{display:block;height:auto}
+  .top,nav,.tabs,.bar,main>h1,main>.sub,.toast,.no-print{display:none!important}
+  main{overflow:visible;padding:0}
+  .card{border:1px solid #bbb;break-inside:avoid}
+}
 @media(max-width:800px){.app{grid-template-columns:64px 1fr}nav a span{display:none}nav .cnt{display:none}.mb{grid-template-columns:1fr}.mb label.full{grid-column:1}}
 </style>
 </head>
@@ -129,6 +143,11 @@ const MODS = [
     campos:[U("placa","Placa",{req:1}), S("modelo","Modelo",MODELOS), T("cor","Cor"), N("km","KM"), T("franq","Franqueado",{list:"franq"}), D("entrada","Entrada no pátio")],
     comp:[["Faixa",r=>faixa(r.km).f],["Retirada",r=>faixa(r.km).p],["Plano",r=>faixa(r.km).plano]],
     filt:[["Faixa",r=>faixa(r.km).f]]}]},
+ {id:"ficha", nome:"FICHA DA MOTO", ic:"📋", secs:[
+   {key:"consulta", t:"Consulta por placa", custom:1},
+   {key:"motos", t:"Cadastro de motos",
+    campos:[U("placa","Placa",{req:1}), S("modelo","Modelo",MODELOS), T("cor","Cor"), T("ano","Ano"), N("km","KM atual"), T("chassi","Chassi"), T("franq","Franqueado (proprietário)",{list:"franq"}),
+            S("situacao","Situação",["Disponível","Locada","Manutenção","Indisponível","Vendida"]), A("obs","Observações",{hide:1})]}]},
  {id:"mecanica", nome:"LOC MECÂNICA", ic:"🔧", secs:[
    {key:"manut", t:"Ficha de manutenção", date:"entrada",
     campos:[U("placa","Placa",{req:1}), T("serv","Serviço / defeito",{req:1}), S("status","Status",["Aberta","Em andamento","Aguardando peça","Concluída"]), D("entrada","Entrada"), D("prev","Previsão"), T("mec","Mecânico"), M("custo","Custo das peças"), A("pecas","Peças usadas",{hide:1})]},
@@ -255,8 +274,9 @@ function drawHome(){
 // ---------- Seção genérica ----------
 function sectionView(){
   const mod = MODS.find(m=>m.id===cur.m), sec = mod.secs.find(s=>s.key===cur.s);
+  if(sec.custom) return fichaView(mod,sec);
   const all = rows(sec.key);
-  const sels = sec.campos.filter(c=>c.t==="sel").slice(0,3).map(c=>[c.l,c.k,c.opts]);
+  const sels =sec.campos.filter(c=>c.t==="sel").slice(0,3).map(c=>[c.l,c.k,c.opts]);
   const filt = (sec.filt||[]);
   const list = all.filter(r=>{
     if(cur.q){ const hay = sec.campos.map(c=>r[c.k]).join(" ").toLowerCase(); if(!hay.includes(cur.q.toLowerCase())) return false }
@@ -284,7 +304,7 @@ function sectionView(){
       else tds.push(`<td>${esc(v)}</td>`);
     });
     (sec.comp||[]).forEach(([,fn])=>{ const v=fn(r); tds.push(`<td>${v==="OK"?chip("OK"):v.startsWith("⚠")?`<span class="chip bad">${esc(v)}</span>`:`<span class="chip z">${esc(v)}</span>`}</td>`) });
-    return `<tr>${tds.join("")}<td class="act"><button class="btn l s" data-edit="${r.id}">Editar</button> <button class="btn r s" data-del="${r.id}">✕</button></td></tr>`;
+    return `<tr>${tds.join("")}<td class="act">${r.placa?`<button class="btn l s" data-ficha="${esc(r.placa)}">Ficha</button> `:""}<button class="btn l s" data-edit="${r.id}">Editar</button> <button class="btn r s" data-del="${r.id}">✕</button></td></tr>`;
   }).join("");
 
   let sum = ""; if(sec.sum){ sum = ` · Total: <b>${brl(list.reduce((a,r)=>a+(Number(r[sec.sum])||0),0))}</b>` }
@@ -313,6 +333,59 @@ function sectionView(){
 function draw(){
   drawNav();
   if(cur.m==="painel") drawHome(); else sectionView();
+}
+
+// ---------- Ficha da moto ----------
+let fichaPlaca = "";
+const SOMOS = ["HUB","SMX","IKONIC","APP LANA","MANCHESTER","MINETTO","CLICK","D'A"];
+const COOP = "COOPERLOC · 0800 000 1372", SOMOSMAIS = "SOMOS MAIS · 0800 943 0123";
+function sosFor(f){
+  const n=(f||"").toUpperCase().trim(); if(!n) return [];
+  const g=rows("g_franq").find(x=>(x.nome||"").toUpperCase()===n); if(g&&g.sos) return [g.sos];
+  if(["MLS","LOCSIMPLES"].includes(n)) return [COOP,SOMOSMAIS];
+  return SOMOS.includes(n) ? [SOMOSMAIS] : [COOP];
+}
+function motoData(p){
+  const o={placa:p,src:[]};
+  ["motos","patio","g_entrada","g_liber"].forEach(k=>{
+    const r=rows(k).find(x=>(x.placa||"").toUpperCase()===p); if(!r) return; o.src.push(k);
+    ["modelo","cor","ano","chassi","km","franq","situacao"].forEach(f=>{ if((o[f]===undefined||o[f]==="") && r[f]!==undefined && r[f]!=="") o[f]=r[f] });
+  });
+  return o;
+}
+function fichaView(mod,sec){
+  const tabs=`<div class="tabs">${mod.secs.map(s=>`<a data-go="${mod.id}/${s.key}" class="${s.key===cur.s?"on":""}">${esc(s.t)}</a>`).join("")}</div>`;
+  const plates=[...new Set(["motos","patio","g_entrada","g_liber","g_loc","manut"].flatMap(k=>rows(k).map(r=>(r.placa||"").toUpperCase()).filter(Boolean)))];
+  $("#main").innerHTML=`<h1>${esc(mod.nome)}</h1><div class="sub">${esc(sec.t)}</div>${tabs}
+   <div class="bar"><input id="fp" list="dl-placas" placeholder="Digite a placa…" value="${esc(fichaPlaca)}" style="text-transform:uppercase;font-weight:700;letter-spacing:1px">
+   <datalist id="dl-placas">${plates.map(p=>`<option value="${esc(p)}">`).join("")}</datalist>
+   <span class="sp"></span><button class="btn g" id="bPrint">Imprimir / salvar em PDF</button></div><div id="fres"></div>`;
+  renderFicha();
+}
+function renderFicha(){
+  const el=$("#fres"); const p=(fichaPlaca||"").trim().toUpperCase();
+  if(!p){ el.innerHTML=`<div class="empty">Digite uma placa para ver a ficha da moto.</div>`; return }
+  const m=motoData(p), by=k=>rows(k).filter(r=>(r.placa||"").toUpperCase()===p);
+  const man=by("manut").sort((a,b)=>String(b.entrada||"").localeCompare(String(a.entrada||"")));
+  const loc=by("g_loc").sort((a,b)=>String(b.data||"").localeCompare(String(a.data||"")));
+  const req=by("l_req").sort((a,b)=>String(b.data||"").localeCompare(String(a.data||"")));
+  if(!m.src.length && !man.length && !loc.length && !req.length){
+    el.innerHTML=`<div class="empty">Placa <b>${esc(p)}</b> não encontrada. Cadastre a moto na aba “Cadastro de motos”.</div>`; return }
+  const chips=[]; if(m.situacao) chips.push(chip(m.situacao));
+  if(m.src.includes("patio")) chips.push(`<span class="chip z">No pátio de disponíveis</span>`);
+  if(m.src.includes("g_liber")) chips.push(`<span class="chip ok">Liberada p/ locação</span>`);
+  if(man.some(r=>r.status!=="Concluída")) chips.push(`<span class="chip bad">Manutenção aberta</span>`);
+  const fx = m.km!==undefined&&m.km!=="" ? faixa(m.km) : null;
+  const kv=(l,v)=>`<div><span>${l}</span><b>${v===undefined||v===""?"—":esc(v)}</b></div>`;
+  const sos=sosFor(m.franq);
+  const tbl=(h,rs)=>rs.length?`<div class="tw" style="max-height:none"><table><thead><tr>${h.map(x=>`<th>${x}</th>`).join("")}</tr></thead><tbody>${rs.join("")}</tbody></table></div>`:`<div class="sum">Nenhum registro.</div>`;
+  el.innerHTML=`
+   <div class="card"><div class="fh"><div><div class="sum">FICHA DA MOTO · LOCAGORA</div><div class="pl">${esc(p)}</div></div><div>${chips.join(" ")}</div></div>
+    <div class="kv">${kv("Modelo",m.modelo)}${kv("Cor",m.cor)}${kv("Ano",m.ano)}${kv("KM",m.km!==undefined&&m.km!==""?Number(m.km).toLocaleString("pt-BR"):"")}${kv("Chassi",m.chassi)}${kv("Franqueado",m.franq)}${fx?kv("Faixa de KM",fx.f)+kv("Retirada",fx.p)+kv("Plano",fx.plano):""}</div>
+    <div class="sos"><span class="sum">SOS / SEGURO</span><br>${sos.length?sos.map(s=>`<b>${esc(s)}</b>`).join("<br>"):`<span class="sum">Informe o franqueado para ver o SOS.</span>`}${["MLS","LOCSIMPLES"].includes((m.franq||"").toUpperCase())?`<br><span class="sum">Franqueado consta nas duas seguradoras; confirme qual vale para esta placa.</span>`:""}</div></div>
+   <div class="card"><h3>Manutenções (${man.length})</h3>${tbl(["Entrada","Serviço","Status","Mecânico","Custo"],man.map(r=>`<tr><td>${fdate(r.entrada)}</td><td>${esc(r.serv)}</td><td>${chip(r.status)}</td><td>${esc(r.mec)}</td><td>${r.custo!==""&&r.custo!==undefined?brl(r.custo):""}</td></tr>`))}</div>
+   <div class="card"><h3>Locações (${loc.length})</h3>${tbl(["Data","Cliente","Consultor","Plano","Caução"],loc.map(r=>`<tr><td>${fdate(r.data)}</td><td>${esc(r.cliente)}</td><td>${esc(r.consultor)}</td><td>${esc(r.plano)}</td><td>${r.caucao!==""&&r.caucao!==undefined?brl(r.caucao):""}</td></tr>`))}</div>
+   <div class="card"><h3>Requisições ao franqueado (${req.length})</h3>${tbl(["Data","Peças","Valor","Status"],req.map(r=>`<tr><td>${fdate(r.data)}</td><td>${esc(r.pecas)}</td><td>${r.valor!==""&&r.valor!==undefined?brl(r.valor):""}</td><td>${chip(r.status)}</td></tr>`))}</div>`;
 }
 
 // ---------- Formulário ----------
@@ -373,9 +446,11 @@ document.addEventListener("change",e=>{
 
 // ---------- Eventos ----------
 document.addEventListener("click",e=>{
-  const t = e.target.closest("[data-go],[data-edit],[data-del],#bNew,#bCsv,#bCancel,#bCopy,#bBackup,#bRestore,#bFull");
+  const t = e.target.closest("[data-go],[data-edit],[data-del],[data-ficha],#bNew,#bCsv,#bCancel,#bCopy,#bBackup,#bRestore,#bFull,#bPrint");
   if(!t) return;
   const sec = cur.s && findSec(cur.s);
+  if(t.dataset.ficha){ fichaPlaca=t.dataset.ficha.toUpperCase(); return go("ficha/consulta") }
+  if(t.id==="bPrint") return window.print();
   if(t.dataset.go) return go(t.dataset.go);
   if(t.id==="bNew") return openForm(cur.s);
   if(t.dataset.edit) return openForm(cur.s,t.dataset.edit);
@@ -397,7 +472,8 @@ $("#frm").addEventListener("submit",e=>{
 });
 document.addEventListener("input",e=>{
   const t=e.target;
-  if(t.id==="q"){ cur.q=t.value; const p=t.selectionStart; sectionView(); const q=$("#q"); q.focus(); q.setSelectionRange(p,p) }
+  if(t.id==="fp"){ fichaPlaca=t.value.toUpperCase(); renderFicha() }
+  else if(t.id==="q"){ cur.q=t.value; const p=t.selectionStart; sectionView(); const q=$("#q"); q.focus(); q.setSelectionRange(p,p) }
   else if(t.dataset.d){ cur["d"+t.dataset.d]=t.value; sectionView() }
 });
 document.addEventListener("change",e=>{
