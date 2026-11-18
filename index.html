@@ -1,0 +1,426 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Locagora Smart – Painel de Operações</title>
+<style>
+:root{
+  --blue:#1f2fe0; --blue-d:#121a9c; --navy:#0b1030; --navy2:#141a45;
+  --green:#36e65a; --green-d:#1fb641; --bg:#f2f4fb; --card:#fff; --ink:#151a3a; --mut:#6b7194; --line:#e1e4f2;
+  --ok:#128a3b; --okbg:#d9f7e2; --bad:#b3261e; --badbg:#fde2e0; --warn:#946200; --warnbg:#fff0cc;
+}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0}
+body{font:14px/1.4 system-ui,-apple-system,Segoe UI,Roboto,sans-serif;color:var(--ink);background:var(--bg);overflow:hidden}
+.app{display:grid;grid-template-columns:230px 1fr;grid-template-rows:56px 1fr;height:100vh}
+.top{grid-column:1/3;background:var(--navy);color:#fff;display:flex;align-items:center;gap:12px;padding:0 16px}
+.logo{font-weight:800;font-size:20px;letter-spacing:-.5px}
+.logo b{color:var(--green)}
+.logo small{display:block;font-size:9px;letter-spacing:3px;font-weight:600;color:#9aa3d8;margin-top:-3px}
+.top .sp{flex:1}
+.btn{border:0;border-radius:8px;padding:8px 12px;font:600 13px inherit;cursor:pointer;background:var(--blue);color:#fff}
+.btn:hover{background:var(--blue-d)}
+.btn.g{background:var(--green);color:#06210f}.btn.g:hover{background:var(--green-d)}
+.btn.o{background:transparent;border:1px solid #ffffff44;color:#fff}.btn.o:hover{background:#ffffff18}
+.btn.l{background:#fff;color:var(--ink);border:1px solid var(--line)}.btn.l:hover{background:#eef0fa}
+.btn.r{background:var(--badbg);color:var(--bad)}
+.btn.s{padding:4px 8px;font-size:12px}
+nav{background:var(--navy2);overflow:auto;padding:10px 8px}
+nav a{display:flex;align-items:center;gap:10px;color:#c9cffa;text-decoration:none;padding:10px 12px;border-radius:10px;margin-bottom:2px;font-weight:600;cursor:pointer}
+nav a:hover{background:#ffffff12}
+nav a.on{background:var(--blue);color:#fff}
+nav a i{font-style:normal;width:20px;text-align:center}
+nav .cnt{margin-left:auto;background:var(--green);color:#06210f;border-radius:20px;font-size:11px;padding:1px 7px}
+main{overflow:auto;padding:18px 22px 40px}
+h1{margin:0 0 4px;font-size:22px}
+.sub{color:var(--mut);margin-bottom:14px}
+.tabs{display:flex;gap:6px;flex-wrap:wrap;margin:10px 0 14px}
+.tabs a{padding:7px 14px;border-radius:20px;background:#fff;border:1px solid var(--line);cursor:pointer;font-weight:600;color:var(--mut)}
+.tabs a.on{background:var(--blue);color:#fff;border-color:var(--blue)}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:12px}
+.kpi{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px 16px;cursor:pointer}
+.kpi:hover{border-color:var(--blue)}
+.kpi .n{font-size:30px;font-weight:800;letter-spacing:-1px}
+.kpi .t{color:var(--mut);font-weight:600}
+.kpi .d{font-size:12px;color:var(--mut)}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px 16px;margin-top:14px}
+.card h3{margin:0 0 8px;font-size:15px}
+.bar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:10px}
+.bar input,.bar select{padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:#fff;font:inherit}
+.bar .sp{flex:1}
+.tw{background:#fff;border:1px solid var(--line);border-radius:14px;overflow:auto;max-height:calc(100vh - 290px)}
+table{border-collapse:collapse;width:100%;min-width:600px}
+th{position:sticky;top:0;background:#eef0fb;text-align:left;font-size:12px;text-transform:uppercase;letter-spacing:.4px;color:var(--mut);padding:9px 10px;white-space:nowrap;z-index:1}
+td{padding:8px 10px;border-top:1px solid var(--line);vertical-align:middle}
+tr:hover td{background:#f8f9ff}
+td.act{white-space:nowrap;text-align:right}
+td.c,th.c{text-align:center}
+.chip{display:inline-block;padding:2px 9px;border-radius:20px;font-size:12px;font-weight:700;background:var(--warnbg);color:var(--warn);white-space:nowrap}
+.chip.ok{background:var(--okbg);color:var(--ok)}.chip.bad{background:var(--badbg);color:var(--bad)}
+.chip.z{background:#e8f0ff;color:var(--blue)}
+.empty{padding:40px;text-align:center;color:var(--mut)}
+input[type=checkbox].sq{width:20px;height:20px;accent-color:var(--blue);cursor:pointer}
+dialog{border:0;border-radius:16px;padding:0;width:min(640px,94vw);box-shadow:0 20px 60px #0007}
+dialog::backdrop{background:#0b103099}
+.mh{padding:14px 18px;border-bottom:1px solid var(--line);font-weight:800;font-size:16px}
+.mb{padding:14px 18px;display:grid;grid-template-columns:1fr 1fr;gap:10px 12px;max-height:68vh;overflow:auto}
+.mb label{display:flex;flex-direction:column;gap:3px;font-size:12px;font-weight:700;color:var(--mut)}
+.mb label.full{grid-column:1/3}
+.mb input,.mb select,.mb textarea{padding:9px 10px;border:1px solid var(--line);border-radius:8px;font:14px inherit;color:var(--ink)}
+.mb textarea{min-height:70px;resize:vertical}
+.mf{padding:12px 18px;border-top:1px solid var(--line);display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap}
+.note{background:#e8f0ff;border-radius:10px;padding:10px 12px;color:#1c2a9a;margin-bottom:12px;font-size:13px}
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--navy);color:#fff;padding:10px 16px;border-radius:10px;z-index:99;opacity:0;transition:.25s;pointer-events:none}
+.toast.on{opacity:1}
+.list{display:grid;gap:6px}
+.list div{display:flex;justify-content:space-between;gap:10px;padding:8px 10px;background:#f6f7fd;border-radius:8px}
+.sum{color:var(--mut);font-weight:600}
+@media(max-width:800px){.app{grid-template-columns:64px 1fr}nav a span{display:none}nav .cnt{display:none}.mb{grid-template-columns:1fr}.mb label.full{grid-column:1}}
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="top">
+    <div class="logo">loca<b>gora</b><small>SMART · OPERAÇÕES</small></div>
+    <div class="sp"></div>
+    <button class="btn o s" id="bBackup">⬇ Backup</button>
+    <button class="btn o s" id="bRestore">⬆ Restaurar</button>
+    <button class="btn g s" id="bFull">⛶ Tela cheia</button>
+    <input type="file" id="fRestore" accept=".json" hidden>
+  </header>
+  <nav id="nav"></nav>
+  <main id="main"></main>
+</div>
+<dialog id="dlg"><form method="dialog" id="frm"></form></dialog>
+<div class="toast" id="toast"></div>
+
+<script>
+"use strict";
+const KEY = "locagora_smart_painel_v1";
+const FRANQ = ["KMP","VECHIATTO","LINCE","LOCSEMPRE","LOCSAFE","LOCSIMPLES","SILVER LOCACOES E SERVICOS","LOCA 10","VAI DE MOTO","MLS","HUB","SMX","IKONIC","APP LANA","MANCHESTER","MINETTO","CLICK"];
+const MODELOS = ["AZX 160 Xtreme","SHI175 Shineray","DK160 Suzuki","Outro"];
+const PLANOS = ["Fidelidade 28 meses","Fidelidade 30 meses","Fidelidade 36 meses","Anual","Mensal"];
+const CONSULT = [];
+
+// ---------- Definição dos módulos ----------
+const F = (k,l,t,o={}) => Object.assign({k,l,t},o);
+const T = (k,l,o)=>F(k,l,"text",o), U=(k,l,o)=>F(k,l,"upper",o), N=(k,l,o)=>F(k,l,"num",o),
+      D=(k,l,o)=>F(k,l,"date",o), M=(k,l,o)=>F(k,l,"money",o), A=(k,l,o)=>F(k,l,"area",o),
+      S=(k,l,opts,o)=>F(k,l,"sel",Object.assign({opts},o));
+
+const faixa = km => {
+  km = Number(km)||0;
+  if(km < 10) return {f:"0 km (< 10 km)", p:"R$ 1.219,90", plano:"Plano 0 km"};
+  if(km <= 2000) return {f:"0 a 2.000 km", p:"R$ 1.219,90", plano:"Plano 0 km"};
+  if(km <= 5000) return {f:"2.001 a 5.000 km", p:"R$ 900,00", plano:"Plano seminovas"};
+  if(km <= 10000) return {f:"5.001 a 10.000 km", p:"R$ 800,00", plano:"Plano seminovas"};
+  return {f:"Acima de 10.001 km", p:"R$ 700,00", plano:"Plano seminovas"};
+};
+
+const MODS = [
+ {id:"painel", nome:"Painel", ic:"▦"},
+ {id:"leads", nome:"Agenda de Leads", ic:"☎", secs:[
+   {key:"leads", t:"Agenda de leads", date:"data",
+    campos:[T("nome","Nome do cliente",{req:1}), T("tel","Telefone",{req:1}), D("data","Data de agendamento"),
+            F("status","Situação","st",{opts:["APROVADO","REPROVADO","DOC PENDENTE","EM ANÁLISE"]}), A("obs","Observações",{hide:1})]}]},
+ {id:"patio", nome:"LOC PÁTIO", ic:"🏍", secs:[
+   {key:"patio", t:"Motos no pátio de disponíveis", date:"entrada", note:"0 km = menos de 10 km. A faixa e o valor de retirada são calculados pelo KM.",
+    campos:[U("placa","Placa",{req:1}), S("modelo","Modelo",MODELOS), T("cor","Cor"), N("km","KM"), T("franq","Franqueado",{list:"franq"}), D("entrada","Entrada no pátio")],
+    comp:[["Faixa",r=>faixa(r.km).f],["Retirada",r=>faixa(r.km).p],["Plano",r=>faixa(r.km).plano]],
+    filt:[["Faixa",r=>faixa(r.km).f]]}]},
+ {id:"mecanica", nome:"LOC MECÂNICA", ic:"🔧", secs:[
+   {key:"manut", t:"Ficha de manutenção", date:"entrada",
+    campos:[U("placa","Placa",{req:1}), T("serv","Serviço / defeito",{req:1}), S("status","Status",["Aberta","Em andamento","Aguardando peça","Concluída"]), D("entrada","Entrada"), D("prev","Previsão"), T("mec","Mecânico"), M("custo","Custo das peças"), A("pecas","Peças usadas",{hide:1})]},
+   {key:"pecas", t:"Peças em estoque",
+    campos:[T("peca","Peça",{req:1}), T("cod","Código"), N("qtd","Quantidade"), N("min","Estoque mínimo"), T("local","Local")],
+    comp:[["Situação",r=>(Number(r.qtd)||0)<=(Number(r.min)||0)?"⚠ Repor":"OK"]]},
+   {key:"agenda_m", t:"Agenda de manutenção", date:"data",
+    campos:[D("data","Data",{req:1}), T("hora","Hora"), U("placa","Placa"), T("cliente","Cliente"), T("serv","Serviço"), S("status","Status",["Agendada","Realizada","Faltou","Reagendada"])]},
+   {key:"compras_m", t:"Lista de compras", date:"data",
+    campos:[T("item","Item",{req:1}), N("qtd","Qtd"), T("forn","Fornecedor"), M("valor","Valor"), D("data","Data"), S("status","Status",["Pendente","Comprado","Recebido"])]}]},
+ {id:"cs", nome:"LOC CS", ic:"💬", secs:[
+   {key:"cs_atend", t:"Atendimento do SAC", date:"data",
+    campos:[D("data","Data"), T("cliente","Cliente",{req:1}), T("tel","Telefone"), U("placa","Placa"), T("assunto","Assunto"), S("status","Status",["Aberto","Em atendimento","Resolvido"]), A("obs","Observações",{hide:1})]},
+   {key:"cs_prop", t:"Propostas prontas", date:"data",
+    campos:[D("data","Data"), T("cliente","Cliente",{req:1}), S("modelo","Moto",MODELOS), S("plano","Plano",PLANOS), M("ent","Entrada"), M("sem","Parcela semanal"), T("franq","Franqueado",{list:"franq"}), S("status","Status",["Rascunho","Enviada ao franqueado","Aceita","Recusada"])]},
+   {key:"cs_aprov", t:"Fila de aprovações", date:"data",
+    campos:[D("data","Data"), T("cliente","Cliente",{req:1}), T("tel","Telefone"), T("pedido","Moto / plano"), S("status","Status",["Pendente","Aprovado","Reprovado"])]}]},
+ {id:"gestao", nome:"LOC GESTÃO", ic:"📊", secs:[
+   {key:"g_entrada", t:"Motos de entrada", date:"data",
+    campos:[U("placa","Placa",{req:1}), S("modelo","Modelo",MODELOS), T("cor","Cor"), N("km","KM"), T("franq","Franqueado",{list:"franq"}), D("data","Data de entrada")]},
+   {key:"g_liber", t:"Motos liberadas p/ locação", date:"data",
+    campos:[U("placa","Placa",{req:1}), S("modelo","Modelo",MODELOS), T("franq","Franqueado",{list:"franq"}), D("data","Liberada em")]},
+   {key:"g_compras", t:"Compras", date:"data",
+    campos:[T("item","Item",{req:1}), T("forn","Fornecedor"), M("valor","Valor"), D("data","Data"), S("status","Status",["Pendente","Comprado","Recebido"])]},
+   {key:"g_franq", t:"Franqueados na esteira", note:"Loca 10 e Vai de Moto: não disponíveis para locação.",
+    campos:[T("nome","Franqueado",{req:1,list:"franq"}), S("disp","Disponível p/ locação",["Sim","Não"]), T("planos","Planos aceitos"), T("sos","SOS / seguro"), A("obs","Observações",{hide:1})]},
+   {key:"g_loc", t:"Locações realizadas", date:"data",
+    campos:[D("data","Data",{req:1}), T("consultor","Consultor"), T("cliente","Cliente"), U("placa","Placa"), T("franq","Franqueado",{list:"franq"}), S("modelo","Modelo",MODELOS), S("tipo","Tipo",["0 km","Seminova"]), S("plano","Plano",["Fidelidade","Anual"]), M("caucao","Caução (entrada)")],
+    sum:"caucao"},
+   {key:"g_fin", t:"Entradas financeiras", date:"data",
+    campos:[D("data","Data",{req:1}), T("desc","Descrição",{req:1}), S("tipo","Tipo",["Caução","Semanal","Outro"]), M("valor","Valor"), U("placa","Placa")],
+    sum:"valor"}]},
+ {id:"comercial", nome:"LOC COMERCIAL", ic:"🧾", secs:[
+   {key:"c_ficha", t:"Ficha de retirada", date:"data", ficha:1, note:"Preencha e use “Copiar texto” para colar no grupo do FRONT. Ao digitar a placa, cor e franqueado vêm do pátio/gestão quando a moto estiver cadastrada.",
+    campos:[D("data","Data"), T("consultor","Consultor"), T("cliente","Cliente",{req:1}), T("cpf","CPF"), T("tel","Telefone"), T("cnh","CNH (nº / validade)"), U("placa","Placa",{lookup:1}), S("modelo","Moto",MODELOS), T("cor","Cor"), T("franq","Franqueado (proprietário)",{list:"franq"}), S("plano","Plano",PLANOS), M("valor","Valor aprovado"), M("caucao","Caução (entrada)"), S("status","Status",["Enviada ao ADM","Em andamento","Concluída"])]},
+   {key:"c_solic", t:"Solicitações de contratação (app)", date:"data",
+    campos:[D("data","Data"), T("cliente","Cliente",{req:1}), T("tel","Telefone"), S("plano","Plano",PLANOS), S("modelo","Moto",MODELOS), S("origem","Origem",["App cliente","Instagram","Indicação","Loja"]), S("status","Status",["Nova","Em análise","Aprovada","Recusada"])]}]},
+ {id:"sac", nome:"LOC SAC", ic:"🆘", secs:[
+   {key:"sac", t:"Solicitações do SAC (app do cliente)", date:"data", note:"Estrutura provisória. Toda solicitação do SAC chega ao LOC CS.",
+    campos:[D("data","Data"), T("cliente","Cliente",{req:1}), T("tel","Telefone"), U("placa","Placa"), S("tipo","Tipo",["Pane na rua","Acidente","Reclamação","Dúvida","Outro"]), S("prio","Prioridade",["Baixa","Média","Alta","Urgente"]), S("status","Status",["Aberto","Em atendimento","Resolvido"]), A("desc","Descrição",{hide:1})]}]},
+ {id:"suporte", nome:"LOC SUPORTE", ic:"🛠", secs:[
+   {key:"suporte", t:"Chamados de suporte", date:"data", note:"Estrutura provisória. Manutenção, agenda e reclamação vindas do app do cliente.",
+    campos:[D("data","Data"), T("cliente","Cliente",{req:1}), U("placa","Placa"), S("tipo","Tipo",["Manutenção","Agenda","Reclamação","Outro"]), T("resp","Responsável"), S("status","Status",["Aberto","Em andamento","Resolvido"]), A("desc","Descrição",{hide:1})]}]},
+ {id:"loja", nome:"LOJA LOCAGORA", ic:"🛒", secs:[
+   {key:"l_req", t:"Requisições a franqueados", date:"data", sum:"valor", note:"Peças gastas na manutenção, cobradas do franqueado por placa.",
+    campos:[D("data","Data"), U("placa","Placa",{req:1}), T("franq","Franqueado",{list:"franq"}), A("pecas","Peças e valores"), M("valor","Valor total"), S("status","Status",["A cobrar","Enviada","Paga"])]},
+   {key:"l_prod", t:"Produtos e serviços",
+    campos:[T("nome","Produto / serviço",{req:1}), M("preco","Preço"), N("qtd","Estoque")]}]}
+];
+
+// ---------- Estado ----------
+let DB; try{ DB = JSON.parse(localStorage.getItem(KEY)) || {} }catch(e){ DB = {} }
+DB.rows = DB.rows || {};
+const save = () => { try{ localStorage.setItem(KEY, JSON.stringify(DB)) }catch(e){ toast("Não foi possível salvar no navegador") } };
+const rows = k => DB.rows[k] || (DB.rows[k] = []);
+const uid = () => Date.now().toString(36)+Math.random().toString(36).slice(2,6);
+const esc = s => String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const today = () => { const d=new Date(); return new Date(d-d.getTimezoneOffset()*6e4).toISOString().slice(0,10) };
+const brl = v => (Number(v)||0).toLocaleString("pt-BR",{style:"currency",currency:"BRL"});
+const fdate = s => s ? s.split("-").reverse().join("/") : "";
+const $ = s => document.querySelector(s);
+function toast(m){ const t=$("#toast"); t.textContent=m; t.classList.add("on"); setTimeout(()=>t.classList.remove("on"),2200) }
+const findSec = k => { for(const m of MODS) for(const s of (m.secs||[])) if(s.key===k) return s; };
+const OKV=["APROVADO","Aprovado","Aprovada","Concluída","Resolvido","Aceita","Recebido","Realizada","Paga","Comprado","Sim"];
+const BADV=["REPROVADO","Reprovado","Recusada","Recusado","Faltou","Não","Urgente"];
+const chip = v => !v ? "" : `<span class="chip ${OKV.includes(v)?"ok":BADV.includes(v)?"bad":""}">${esc(v)}</span>`;
+
+const cur = {m:"painel", s:null, q:"", f:{}, d1:"", d2:""};
+function go(h){ location.hash = h }
+function route(){
+  const [m,s] = (location.hash.slice(1)||"painel").split("/");
+  const mod = MODS.find(x=>x.id===m) || MODS[0];
+  cur.m = mod.id; cur.s = mod.secs ? (s && mod.secs.find(x=>x.key===s) ? s : mod.secs[0].key) : null;
+  cur.q=""; cur.f={}; cur.d1=cur.d2="";
+  draw();
+}
+window.addEventListener("hashchange", route);
+
+// ---------- Navegação ----------
+function badge(mod){
+  if(mod.id==="painel") return "";
+  const open = (mod.secs||[]).reduce((a,s)=>a+rows(s.key).filter(r=>r.status && !OKV.concat(BADV).includes(r.status)).length,0);
+  return open ? `<span class="cnt">${open}</span>` : "";
+}
+function drawNav(){
+  $("#nav").innerHTML = MODS.map(m=>`<a data-go="${m.id}" class="${cur.m===m.id?"on":""}"><i>${m.ic}</i><span>${esc(m.nome)}</span>${badge(m)}</a>`).join("");
+}
+
+// ---------- Painel ----------
+function kpi(n,t,d,link){ return `<div class="kpi" data-go="${link}"><div class="n">${n}</div><div class="t">${esc(t)}</div><div class="d">${esc(d||"")}</div></div>` }
+function drawHome(){
+  const pat = rows("patio"), td = today();
+  const z = pat.filter(r=>(Number(r.km)||0)<10).length;
+  const man = rows("manut").filter(r=>r.status!=="Concluída").length;
+  const leadsHoje = rows("leads").filter(r=>r.data===td);
+  const leadsPend = rows("leads").filter(r=>!r.status || ["DOC PENDENTE","EM ANÁLISE"].includes(r.status)).length;
+  const aprov = rows("cs_aprov").filter(r=>r.status==="Pendente").length;
+  const sac = rows("sac").filter(r=>r.status!=="Resolvido").length + rows("cs_atend").filter(r=>r.status!=="Resolvido").length;
+  const sup = rows("suporte").filter(r=>r.status!=="Resolvido").length;
+  const mes = td.slice(0,7);
+  const cau = rows("g_loc").filter(r=>(r.data||"").startsWith(mes)).reduce((a,r)=>a+(Number(r.caucao)||0),0);
+  const locM = rows("g_loc").filter(r=>(r.data||"").startsWith(mes)).length;
+  const pecas = rows("pecas").filter(r=>(Number(r.qtd)||0)<=(Number(r.min)||0)).length;
+  $("#main").innerHTML = `
+   <h1>Painel de Operações</h1><div class="sub">Locagora João Pessoa · ${fdate(td)}</div>
+   <div class="grid">
+    ${kpi(pat.length,"Motos no pátio",`${z} com 0 km`,"patio")}
+    ${kpi(locM,"Locações no mês",`Caução: ${brl(cau)}`,"gestao/g_loc")}
+    ${kpi(leadsHoje.length,"Leads agendados hoje",`${leadsPend} em aberto no total`,"leads")}
+    ${kpi(aprov,"Aprovações pendentes","Fila do LOC CS","cs/cs_aprov")}
+    ${kpi(man,"Manutenções abertas",`${pecas} peça(s) para repor`,"mecanica")}
+    ${kpi(sac,"SAC / atendimentos abertos","","cs")}
+    ${kpi(sup,"Chamados de suporte","","suporte")}
+    ${kpi(rows("c_solic").filter(r=>r.status==="Nova").length,"Solicitações novas (app)","LOC COMERCIAL","comercial/c_solic")}
+   </div>
+   <div class="card"><h3>Leads agendados para hoje</h3>
+    <div class="list">${leadsHoje.length? leadsHoje.map(r=>`<div><span><b>${esc(r.nome)}</b> · ${esc(r.tel||"")}</span><span>${chip(r.status||"Sem situação")}</span></div>`).join("") : `<div><span class="sum">Nenhum lead agendado para hoje.</span></div>`}</div>
+   </div>
+   <div class="card"><h3>Como alimentar o sistema</h3>
+    <div class="sub" style="margin:0">Cada módulo tem suas abas. Use “+ Novo” para registrar. Os dados ficam salvos neste navegador; use <b>⬇ Backup</b> para guardar uma cópia e <b>⬆ Restaurar</b> para levar a outro computador.</div>
+   </div>`;
+}
+
+// ---------- Seção genérica ----------
+function sectionView(){
+  const mod = MODS.find(m=>m.id===cur.m), sec = mod.secs.find(s=>s.key===cur.s);
+  const all = rows(sec.key);
+  const sels = sec.campos.filter(c=>c.t==="sel").slice(0,3).map(c=>[c.l,c.k,c.opts]);
+  const filt = (sec.filt||[]);
+  const list = all.filter(r=>{
+    if(cur.q){ const hay = sec.campos.map(c=>r[c.k]).join(" ").toLowerCase(); if(!hay.includes(cur.q.toLowerCase())) return false }
+    for(const [,k] of sels) if(cur.f[k] && r[k]!==cur.f[k]) return false;
+    for(const [l,fn] of filt) if(cur.f["~"+l] && fn(r)!==cur.f["~"+l]) return false;
+    if(sec.date){ const v=r[sec.date]||""; if(cur.d1 && v<cur.d1) return false; if(cur.d2 && v>cur.d2) return false }
+    return true;
+  }).sort((a,b)=> String(b[sec.date]||"").localeCompare(String(a[sec.date]||"")) || b.ts-a.ts);
+
+  const cols = []; // cabeçalhos
+  sec.campos.forEach(c=>{ if(c.hide) return; if(c.t==="st") c.opts.forEach(o=>cols.push({h:o,c:1})); else cols.push({h:c.l}) });
+  (sec.comp||[]).forEach(([l])=>cols.push({h:l}));
+
+  const head = cols.map(c=>`<th class="${c.c?"c":""}">${esc(c.h)}</th>`).join("")+"<th></th>";
+  const body = list.map(r=>{
+    const tds = [];
+    sec.campos.forEach(c=>{
+      if(c.hide) return;
+      const v = r[c.k];
+      if(c.t==="st") c.opts.forEach(o=>tds.push(`<td class="c"><input type="checkbox" class="sq" data-st="${r.id}" data-k="${c.k}" data-v="${esc(o)}" ${v===o?"checked":""}></td>`));
+      else if(c.t==="sel") tds.push(`<td>${chip(v)}</td>`);
+      else if(c.t==="date") tds.push(`<td>${fdate(v)}</td>`);
+      else if(c.t==="money") tds.push(`<td>${v!==undefined&&v!==""?brl(v):""}</td>`);
+      else if(c.t==="num") tds.push(`<td>${v!==undefined&&v!==""?Number(v).toLocaleString("pt-BR"):""}</td>`);
+      else tds.push(`<td>${esc(v)}</td>`);
+    });
+    (sec.comp||[]).forEach(([,fn])=>{ const v=fn(r); tds.push(`<td>${v==="OK"?chip("OK"):v.startsWith("⚠")?`<span class="chip bad">${esc(v)}</span>`:`<span class="chip z">${esc(v)}</span>`}</td>`) });
+    return `<tr>${tds.join("")}<td class="act"><button class="btn l s" data-edit="${r.id}">Editar</button> <button class="btn r s" data-del="${r.id}">✕</button></td></tr>`;
+  }).join("");
+
+  let sum = ""; if(sec.sum){ sum = ` · Total: <b>${brl(list.reduce((a,r)=>a+(Number(r[sec.sum])||0),0))}</b>` }
+  const tabs = mod.secs.length>1 ? `<div class="tabs">${mod.secs.map(s=>`<a data-go="${mod.id}/${s.key}" class="${s.key===cur.s?"on":""}">${esc(s.t)}</a>`).join("")}</div>` : "";
+  const selUI = sels.map(([l,k,o])=>`<select data-f="${k}"><option value="">${esc(l)}: todos</option>${o.map(x=>`<option ${cur.f[k]===x?"selected":""}>${esc(x)}</option>`).join("")}</select>`).join("")
+    + filt.map(([l,fn])=>{ const vals=[...new Set(all.map(fn))]; return `<select data-f="~${l}"><option value="">${esc(l)}: todas</option>${vals.map(x=>`<option ${cur.f["~"+l]===x?"selected":""}>${esc(x)}</option>`).join("")}</select>` }).join("");
+  const dates = sec.date ? `<input type="date" data-d="1" value="${cur.d1}" title="De"><input type="date" data-d="2" value="${cur.d2}" title="Até">` : "";
+
+  $("#main").innerHTML = `
+   <h1>${esc(mod.nome)}</h1><div class="sub">${esc(sec.t)}</div>
+   ${tabs}
+   ${sec.note?`<div class="note">${esc(sec.note)}</div>`:""}
+   <div class="bar">
+     <input id="q" placeholder="Buscar…" value="${esc(cur.q)}">
+     ${selUI}${dates}
+     <span class="sum">${list.length} registro(s)${sum}</span>
+     <span class="sp"></span>
+     <button class="btn l s" id="bCsv">Exportar CSV</button>
+     <button class="btn g" id="bNew">+ Novo</button>
+   </div>
+   <div class="tw">${list.length?`<table><thead><tr>${head}</tr></thead><tbody>${body}</tbody></table>`:`<div class="empty">Nada por aqui ainda. Clique em “+ Novo” para registrar.</div>`}</div>`;
+  // datalist de franqueados
+  if(!$("#dl-franq")) document.body.insertAdjacentHTML("beforeend",`<datalist id="dl-franq">${FRANQ.map(f=>`<option value="${esc(f)}">`).join("")}</datalist>`);
+}
+
+function draw(){
+  drawNav();
+  if(cur.m==="painel") drawHome(); else sectionView();
+}
+
+// ---------- Formulário ----------
+let editing = null;
+function openForm(secKey, id){
+  const sec = findSec(secKey); const r = id ? rows(secKey).find(x=>x.id===id) : {};
+  editing = {secKey, id};
+  const def = {}; sec.campos.forEach(c=>{ if(c.t==="date" && !id && c.k===sec.date) def[c.k]=today() });
+  const inp = c => {
+    const v = r[c.k] ?? def[c.k] ?? "";
+    const n = `name="${c.k}"`;
+    if(c.t==="sel"||c.t==="st") return `<select ${n}><option value=""></option>${c.opts.map(o=>`<option ${v===o?"selected":""}>${esc(o)}</option>`).join("")}</select>`;
+    if(c.t==="area") return `<textarea ${n}>${esc(v)}</textarea>`;
+    if(c.t==="num") return `<input ${n} type="number" step="any" value="${esc(v)}">`;
+    if(c.t==="money") return `<input ${n} type="number" step="0.01" value="${esc(v)}">`;
+    if(c.t==="date") return `<input ${n} type="date" value="${esc(v)}">`;
+    return `<input ${n} value="${esc(v)}" ${c.list?`list="dl-franq"`:""} ${c.req?"required":""} ${c.t==="upper"?`style="text-transform:uppercase"`:""} ${c.lookup?`data-lookup="1"`:""}>`;
+  };
+  $("#frm").innerHTML = `
+    <div class="mh">${id?"Editar":"Novo registro"} · ${esc(sec.t)}</div>
+    <div class="mb">${sec.campos.map(c=>`<label class="${c.t==="area"?"full":""}">${esc(c.l)}${c.req?" *":""}${inp(c)}</label>`).join("")}</div>
+    <div class="mf">
+      ${sec.ficha?`<button type="button" class="btn l" id="bCopy">Copiar texto da ficha</button>`:""}
+      <button type="button" class="btn l" id="bCancel">Cancelar</button>
+      <button type="submit" class="btn g" value="ok">Salvar</button>
+    </div>`;
+  $("#dlg").showModal();
+}
+function collect(sec){
+  const fd = new FormData($("#frm")), o = {};
+  sec.campos.forEach(c=>{
+    let v = (fd.get(c.k)||"").toString().trim();
+    if(c.t==="upper") v = v.toUpperCase();
+    if((c.t==="num"||c.t==="money") && v!=="") v = Number(v);
+    o[c.k] = v;
+  });
+  return o;
+}
+function fichaText(sec,o){
+  const L = ["*FICHA DE RETIRADA – LOCAGORA*"];
+  sec.campos.forEach(c=>{ if(c.k==="status") return; let v=o[c.k]; if(v===""||v===undefined) return;
+    if(c.t==="date") v=fdate(v); if(c.t==="money") v=brl(v); L.push(`${c.l}: ${v}`) });
+  return L.join("\n");
+}
+function lookupPlaca(p){
+  p = (p||"").toUpperCase().trim(); if(!p) return null;
+  for(const k of ["patio","g_entrada","g_liber"]){ const m = rows(k).find(x=>(x.placa||"").toUpperCase()===p); if(m) return m }
+  return null;
+}
+document.addEventListener("change",e=>{
+  const t=e.target;
+  if(t.dataset && t.dataset.lookup){
+    const m = lookupPlaca(t.value); if(!m) return;
+    const set=(n,v)=>{ const el=$(`#frm [name="${n}"]`); if(el && v && !el.value) el.value=v };
+    set("modelo",m.modelo); set("cor",m.cor); set("franq",m.franq); toast("Dados da moto preenchidos");
+  }
+});
+
+// ---------- Eventos ----------
+document.addEventListener("click",e=>{
+  const t = e.target.closest("[data-go],[data-edit],[data-del],#bNew,#bCsv,#bCancel,#bCopy,#bBackup,#bRestore,#bFull");
+  if(!t) return;
+  const sec = cur.s && findSec(cur.s);
+  if(t.dataset.go) return go(t.dataset.go);
+  if(t.id==="bNew") return openForm(cur.s);
+  if(t.dataset.edit) return openForm(cur.s,t.dataset.edit);
+  if(t.dataset.del){ if(confirm("Excluir este registro?")){ DB.rows[cur.s]=rows(cur.s).filter(r=>r.id!==t.dataset.del); save(); draw(); toast("Registro excluído") } return }
+  if(t.id==="bCancel") return $("#dlg").close();
+  if(t.id==="bCopy"){ const txt=fichaText(findSec(editing.secKey),collect(findSec(editing.secKey))); (navigator.clipboard?navigator.clipboard.writeText(txt):Promise.reject()).then(()=>toast("Ficha copiada")).catch(()=>{ prompt("Copie o texto:",txt) }); return }
+  if(t.id==="bCsv") return csv(sec);
+  if(t.id==="bBackup") return backup();
+  if(t.id==="bRestore") return $("#fRestore").click();
+  if(t.id==="bFull"){ document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen().catch(()=>toast("Seu navegador bloqueou a tela cheia (tente F11)")) }
+});
+$("#frm").addEventListener("submit",e=>{
+  e.preventDefault();
+  const sec = findSec(editing.secKey), o = collect(sec);
+  const miss = sec.campos.find(c=>c.req && !o[c.k]); if(miss){ toast("Preencha: "+miss.l); return }
+  if(editing.id){ const r = rows(editing.secKey).find(x=>x.id===editing.id); Object.assign(r,o) }
+  else rows(editing.secKey).push(Object.assign({id:uid(),ts:Date.now()},o));
+  save(); $("#dlg").close(); draw(); toast("Salvo");
+});
+document.addEventListener("input",e=>{
+  const t=e.target;
+  if(t.id==="q"){ cur.q=t.value; const p=t.selectionStart; sectionView(); const q=$("#q"); q.focus(); q.setSelectionRange(p,p) }
+  else if(t.dataset.d){ cur["d"+t.dataset.d]=t.value; sectionView() }
+});
+document.addEventListener("change",e=>{
+  const t=e.target;
+  if(t.dataset.f!==undefined){ cur.f[t.dataset.f]=t.value; sectionView() }
+  if(t.dataset.st){ const r=rows(cur.s).find(x=>x.id===t.dataset.st); r[t.dataset.k]=t.checked?t.dataset.v:""; save(); sectionView(); drawNav() }
+});
+
+// ---------- Exportar / backup ----------
+function csv(sec){
+  const cols = sec.campos.map(c=>[c.l,r=>r[c.k]]).concat((sec.comp||[]).map(([l,fn])=>[l,fn]));
+  const q = v => `"${String(v??"").replace(/"/g,'""')}"`;
+  const out = [cols.map(c=>q(c[0])).join(";")].concat(rows(sec.key).map(r=>cols.map(c=>q(c[1](r))).join(";")));
+  dl("﻿"+out.join("\r\n"), `${sec.key}_${today()}.csv`, "text/csv");
+}
+function backup(){ dl(JSON.stringify(DB,null,1), `locagora_backup_${today()}.json`, "application/json") }
+function dl(txt,name,type){ const a=document.createElement("a"); a.href=URL.createObjectURL(new Blob([txt],{type})); a.download=name; a.click(); setTimeout(()=>URL.revokeObjectURL(a.href),1000) }
+$("#fRestore").addEventListener("change",e=>{
+  const f=e.target.files[0]; if(!f) return;
+  const rd=new FileReader(); rd.onload=()=>{ try{ const d=JSON.parse(rd.result); if(!d.rows) throw 0; if(confirm("Substituir os dados atuais pelo backup?")){ DB=d; save(); draw(); toast("Backup restaurado") } }catch(_){ toast("Arquivo de backup inválido") } e.target.value="" }; rd.readAsText(f);
+});
+
+route();
+</script>
+</body>
+</html>
